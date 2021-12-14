@@ -7,8 +7,8 @@ const nodemailer = require("nodemailer");
 const randomstring = require("randomstring");
 const app = express();
 
-app.listen("9007", (req, resp) => {
-  console.log("Server is runing on port 9007...");
+app.listen("9001", (req, resp) => {
+  console.log("Server is runing on port 9001...");
 });
 
 app.get(`${API_URL.user}/all`, (httpReq, httpResp) => {
@@ -113,7 +113,7 @@ app.get("/api/auth/register", (req, resp) => {
 
           //create api url
 
-          let endpoint = `http://localhost:9007/api/verify-email/${newUser.email}/code/${newUser.token}`;
+          let endpoint = `http://localhost:9001/api/verify-email/${newUser.email}/code/${newUser.token}`;
 
           // send the email
           let transporter = nodemailer.createTransport({
@@ -181,3 +181,94 @@ app.get("/api/verify-email/:email/code/:token", (req, resp) => {
   );
   console.log(req.params);
 });
+
+app.get("/api/resend-email/:email/code/:token", (req, resp) => {
+  let email = req.params.email;
+  let Token = req.params.token;
+  DB.query(
+    `SELECT Email from Email WHERE Email='${email}' and Token='${Token}'`,
+    (err, resQ) => {
+      if (err) throw err;
+      else {
+        if (resQ.length === 0) {
+          resp.send("Token or email are unvalid");
+          console.log("Token or email are unvalid");
+        } else {
+          DB.query(
+            `UPDATE Email SET expirationdate = ${new Date(
+              Date.now() + 24 * 60 * 60 * 1000
+            )} WHERE email='${email}'`,
+            (err, resQ) => {
+              if (err) throw err;
+              else {
+                console.log(resQ);
+                resp.send("expiration date has been updated 😄 !!");
+              }
+            }
+          );
+
+          //create Api
+          let endpoint = `http://localhost:9001/api/resend-email/${email}/code/${Token}`;
+          //send email
+          let transporter = nodemailer.createTransport({
+            host: "smtp.mailgun.org",
+            port: 587,
+            secure: false, // true for 465, false for other ports
+            auth: {
+              user: MAILGUN.user, // generated ethereal user
+              pass: MAILGUN.password, // generated ethereal password
+            },
+          });
+          // message
+          let message = {
+            from: '"Fred Foo 👻" <rachidaanjr@gmail.com>', // sender address
+            to: email, // list of receivers
+            subject: "Hello ✔", // Subject line
+            html: ` <h1>thanks for your registration</h1>
+                      <a href="${endpoint}">verify</a>
+                      the link will be expired after 24h`, // html body
+            tls: {
+              rejectUnauthorized: false,
+            },
+          };
+          //send email
+          transporter.sendMail(message, (err, info) => {
+            if (err) throw err;
+            else {
+              resp.send(`<h1>it worked</h1>`);
+            }
+          });
+        }
+      }
+    }
+  );
+});
+
+app.get("/api/forget-password/:email/code/:isverified"),
+  (req, resp) => {
+    let email = req.params.email;
+    let isverified = req.params.isverified;
+    DB.query(
+      `SELECT Email from Email WHERE Email='${email}' AND isverified='${isverified}'`,
+      (err, resQ) => {
+        if (err) throw err;
+        else {
+          if (resQ.length === 0) {
+            resp.send("email are invalid");
+            console.log("email are invalid");
+          } else {
+            DB.query(
+              `UPDATE Email SET PASSWORD = "Enemy9HAHAha" WHERE email='${email}' AND isverified='${isverified}'`,
+              (err, resQ) => {
+                if (err) throw err;
+                else {
+                  console.log(resQ);
+                  resp.send("PASS CHANGED ;) !!");
+                }
+              }
+            );
+          }
+        }
+      }
+    );
+  };
