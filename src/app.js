@@ -7,8 +7,8 @@ const nodemailer = require("nodemailer");
 const randomstring = require("randomstring");
 const app = express();
 
-app.listen("9001", (req, resp) => {
-  console.log("Server is runing on port 9001...");
+app.listen("9000", (req, resp) => {
+  console.log("Server is runing on port 9000...");
 });
 
 app.get(`${API_URL.user}/all`, (httpReq, httpResp) => {
@@ -113,7 +113,7 @@ app.get("/api/auth/register", (req, resp) => {
 
           //create api url
 
-          let endpoint = `http://localhost:9001/api/verify-email/${newUser.email}/code/${newUser.token}`;
+          let endpoint = `http://localhost:9000/api/verify-email/${newUser.email}/code/${newUser.token}`;
 
           // send the email
           let transporter = nodemailer.createTransport({
@@ -162,7 +162,7 @@ app.get("/api/verify-email/:email/code/:token", (req, resp) => {
   let Email = req.params.email;
   let Token = req.params.token;
   DB.query(
-    `SELECT  expirationdate FROM Email WHERE Email='${Email}' AND Token='${Token}'`,
+    `SELECT expirationdate FROM Email WHERE Email='${Email}' AND Token='${Token}'`,
     (err, resQ) => {
       if (resQ.length === 0) {
         resp.send("token or email are invalid");
@@ -208,7 +208,7 @@ app.get("/api/resend-email/:email/code/:token", (req, resp) => {
           );
 
           //create Api
-          let endpoint = `http://localhost:9001/api/resend-email/${email}/code/${Token}`;
+          let endpoint = `http://localhost:9000/api/resend-email/${email}/code/${Token}`;
           //send email
           let transporter = nodemailer.createTransport({
             host: "smtp.mailgun.org",
@@ -244,67 +244,64 @@ app.get("/api/resend-email/:email/code/:token", (req, resp) => {
   );
 });
 
-app.get("/api/forget-password/:email"),
-  (req, resp) => {
-    let email = req.params.email;
+app.get("/api/forget-password/:email", (req, resp) => {
+  let email = req.params.email;
+  DB.query(`SELECT Email from Email WHERE Email='${email}'`, (err, resQ) => {
+    if (err) throw err;
+    else {
+      if (resQ.length === 0) {
+        resp.send("email is invalid");
+        console.log("email is invalid");
+      } else {
+        DB.query(
+          `SELECT isverified FROM Email WHERE Email='${email}'`,
+          (err, resQ) => {
+            if (err) throw err;
+            else {
+              console.log(resQ);
 
-    DB.query(`SELECT Email from Email WHERE Email='${email}'`, (err, resQ) => {
-      if (err) throw err;
-      else {
-        if (resQ.length === 0) {
-          resp.send("email is invalid");
-          console.log("email is invalid");
-        } else {
-          DB.query(
-            `SELECT isverified FROM Email WHERE Email='${email}'`,
-            (err, resQ) => {
-              if (err) throw err;
-              else {
-                if (!isverified) {
-                  console.log(resQ);
-                  resp.send("plz verify your email");
-                } else {
-                  Email.token = randomstring.generate();
-                  Email.expirationdate = new Date(
-                    Date.now() + 24 * 60 * 60 * 1000
-                  );
+              if (resQ[0].isverified === 0) {
+                resp.send("plz verify your email");
+              } else {
+                let token = randomstring.generate();
+                let expirationdate = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-                  //create api url
+                //create api url
 
-                  let endpoint = `http://localhost:9001/api/reset-pass/${email}/code/${Token}`;
-                  let transporter = nodemailer.createTransport({
-                    host: "smtp.mailgun.org",
-                    port: 587,
-                    secure: false, // true for 465, false for other ports
-                    auth: {
-                      user: MAILGUN.user, // generated ethereal user
-                      pass: MAILGUN.password, // generated ethereal password
-                    },
-                  });
-                  // message
-                  let message = {
-                    from: '"Fred Foo 👻" <aumanelgad65@gmail.com>', // sender address
-                    to: email, // list of receivers
-                    subject: "Hello ✔", // Subject line
-                    html: ` <h1>thanks for your registration</h1>
-                              <a href="${endpoint}">verify</a>
-                              the link will be expired after 24h`, // html body
-                    tls: {
-                      rejectUnauthorized: false,
-                    },
-                  };
-                  //send email
-                  transporter.sendMail(message, (err, info) => {
-                    if (err) throw err;
-                    else {
-                      resp.send(`<h1>it worked</h1>`);
-                    }
-                  });
-                }
+                let endpoint = `http://localhost:9000/api/reset-pass/${email}/code/${token}`;
+                let transporter = nodemailer.createTransport({
+                  host: "smtp.mailgun.org",
+                  port: 587,
+                  secure: false, // true for 465, false for other ports
+                  auth: {
+                    user: MAILGUN.Username, // generated ethereal user
+                    pass: MAILGUN.password, // generated ethereal password
+                  },
+                });
+                // message
+                let message = {
+                  from: "aymanelgad95@gmail.com", // sender address
+                  to: email, // list of receivers
+                  subject: "Hello ✔", // Subject line
+                  html: ` <h1>thanks for your registration</h1>
+                            <a href="${endpoint}">verify</a>
+                            the link will be expired after 24h"`, // html body
+                  tls: {
+                    rejectUnauthorized: false,
+                  },
+                };
+                //send email
+                transporter.sendMail(message, (err, info) => {
+                  if (err) throw err;
+                  else {
+                    resp.send(`<h1>it worked</h1>`);
+                  }
+                });
               }
             }
-          );
-        }
+          }
+        );
       }
-    });
-  };
+    }
+  });
+});
