@@ -265,6 +265,16 @@ app.get("/api/forget-password/:email", (req, resp) => {
               } else {
                 let token = randomstring.generate();
                 let expirationdate = new Date(Date.now() + 24 * 60 * 60 * 1000);
+                DB.query(
+                  `UPDATE Email SET token='${token}', expirationdate=DATE_ADD(NOW(),INTERVAL 1 DAY ) WHERE Email='${email}' `,
+                  (err, resQ) => {
+                    if (err) throw err;
+                    else {
+                      console.log(resQ);
+                      resp.send("check ur email");
+                    }
+                  }
+                );
 
                 //create api url
 
@@ -304,4 +314,33 @@ app.get("/api/forget-password/:email", (req, resp) => {
       }
     }
   });
+});
+
+app.get("/api/reset-pass/:email/code/:token", (req, resp) => {
+  let email = req.params.email;
+  let token = req.params.token;
+  DB.query(
+    `SELECT Email from Email WHERE Email='${email}' AND Token='${token}'`,
+    (err, resQ) => {
+      if (err) throw err;
+      else {
+        if (resQ.length === 0) {
+          resp.send("invalid email or token");
+        } else {
+          DB.query(
+            ` UPDATE Email
+        SET token='', password='Aymanc78';
+        WHERE Email ='${email}';`,
+            (err, resQ) => {
+              if (err) throw err;
+              else {
+                console.log(resQ);
+                resp.send("pass changed !!");
+              }
+            }
+          );
+        }
+      }
+    }
+  );
 });
