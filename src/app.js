@@ -344,3 +344,16 @@ app.get("/api/reset-pass/:email/code/:token", (req, resp) => {
     }
   );
 });
+
+app.get("/api/login/:email", (req, resp) => {
+  let email = req.params.email;
+  DB.query(`SELECT Email from Email WHERE Email='${email}'`, (err, resQ) => {
+    if (err) throw err;
+    else {
+      if (resQ.length === 0) {
+        resp.send("email is invalid");
+        console.log("email is invalid");
+      }
+    }
+  });
+});
