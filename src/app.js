@@ -345,9 +345,9 @@ app.get("/api/reset-pass/:email/code/:token", (req, resp) => {
   );
 });
 
-app.get("/api/login/:email/pass/:password", (req, resp) => {
+app.get("/api/login/:email", (req, resp) => {
   let email = req.params.email;
-  let pass = req.params.password;
+  let pass = req.params.PASSWORD;
   DB.query(`SELECT Email from Email WHERE Email='${email}'`, (err, resQ) => {
     if (err) throw err;
     else {
