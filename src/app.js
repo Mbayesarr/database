@@ -345,30 +345,20 @@ app.get("/api/reset-pass/:email/code/:token", (req, resp) => {
   );
 });
 
-app.get("/api/login/:email", (req, resp) => {
+app.get("/api/login/:email/code/:pass", (req, resp) => {
   let email = req.params.email;
-  let pass = req.params.PASSWORD;
-  DB.query(`SELECT Email from Email WHERE Email='${email}'`, (err, resQ) => {
-    if (err) throw err;
-    else {
-      if (resQ.length === 0) {
-        resp.send("email is invalid");
-        console.log("email is invalid");
-      } else {
-        DB.query(
-          `SELECT PASSWORD FROM Email WHERE Email='${email}'`,
-          (err, resQ) => {
-            if (err) throw err;
-            else {
-              if (resQ[0].PASSWORD === "Aymanc54") {
-                resp.send("you logged in");
-              } else {
-                resp.send("u");
-              }
-            }
-          }
-        );
+  let pass = req.params.pass;
+  DB.query(
+    `SELECT PASSWORD from Email WHERE Email='${email}' AND PASSWORD='${pass}'`,
+    (err, resQ) => {
+      if (err) throw err;
+      else {
+        if (resQ.length === 0) {
+          resp.send("invalid email or pass");
+        } else {
+          resp.send("SIGNED IN");
+        }
       }
     }
-  });
+  );
 });
