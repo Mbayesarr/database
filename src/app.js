@@ -1,3 +1,6 @@
+const bcrypt = require("bcrypt");
+const saltRounds = 10;
+//hi boi
 const express = require("express");
 const { API_URL } = require("./config/api");
 const { DB } = require("./config/mysql");
@@ -7,8 +10,8 @@ const nodemailer = require("nodemailer");
 const randomstring = require("randomstring");
 const app = express();
 
-app.listen("9000", (req, resp) => {
-  console.log("Server is runing on port 9000...");
+app.listen("9002", (req, resp) => {
+  console.log("Server is runing on port 9002...");
 });
 
 app.get(`${API_URL.user}/all`, (httpReq, httpResp) => {
@@ -52,7 +55,7 @@ app.get("/api/auth/register", (req, resp) => {
     "aymanelgad65@gmail.com",
     "Aymanc54",
     "Aymanc54",
-    "Aymanc54",
+    "aymanC87",
     "https://www.google.cogfjhgbjnjbjnk"
   );
   // data validation
@@ -113,7 +116,7 @@ app.get("/api/auth/register", (req, resp) => {
 
           //create api url
 
-          let endpoint = `http://localhost:9000/api/verify-email/${newUser.email}/code/${newUser.token}`;
+          let endpoint = `http://localhost:9002/api/verify-email/${newUser.email}/code/${newUser.token}`;
 
           // send the email
           let transporter = nodemailer.createTransport({
@@ -144,14 +147,22 @@ app.get("/api/auth/register", (req, resp) => {
               console.log(info);
             }
           });
-          //insert newUser to the database , replace the question mark with the value of newUser
-          DB.query(` INSERT INTO Email SET ? `, newUser, (err, resQQ) => {
-            //error de cnx avec la base de donnee
-            if (err) throw err;
-            else {
-              resp.send("Please Check your Email !!");
-            }
-          });
+          bcrypt
+            .hash(newUser.password, saltRounds)
+            .then((hash) => {
+              newUser.password = hash;
+              //insert newUser to the database , replace the question mark with the value of newUser
+              DB.query(` INSERT INTO Email SET ? `, newUser, (err, resQQ) => {
+                //error de cnx avec la base de donnee
+                if (err) throw err;
+                else {
+                  resp.send("Please Check your Email !!");
+                }
+              });
+              console.log(`Hash: ${hash}`);
+              // Store hash in your password DB.
+            })
+            .catch((err) => console.error(err.message));
         }
       }
     }
@@ -208,7 +219,7 @@ app.get("/api/resend-email/:email/code/:token", (req, resp) => {
           );
 
           //create Api
-          let endpoint = `http://localhost:9000/api/resend-email/${email}/code/${Token}`;
+          let endpoint = `http://localhost:9002/api/resend-email/${email}/code/${Token}`;
           //send email
           let transporter = nodemailer.createTransport({
             host: "smtp.mailgun.org",
@@ -264,7 +275,7 @@ app.get("/api/forget-password/:email", (req, resp) => {
                 resp.send("plz verify your email");
               } else {
                 let token = randomstring.generate();
-                let expirationdate = new Date(Date.now() + 24 * 60 * 60 * 1000);
+                // let expirationdate = new Date(Date.now() + 24 * 60 * 60 * 1000);
                 DB.query(
                   `UPDATE Email SET token='${token}', expirationdate=DATE_ADD(NOW(),INTERVAL 1 DAY ) WHERE Email='${email}' `,
                   (err, resQ) => {
@@ -278,7 +289,7 @@ app.get("/api/forget-password/:email", (req, resp) => {
 
                 //create api url
 
-                let endpoint = `http://localhost:9000/api/reset-pass/${email}/code/${token}`;
+                let endpoint = `http://localhost:9002/api/reset-pass/${email}/code/${token}`;
                 let transporter = nodemailer.createTransport({
                   host: "smtp.mailgun.org",
                   port: 587,
