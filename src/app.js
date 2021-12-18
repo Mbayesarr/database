@@ -10,8 +10,8 @@ const nodemailer = require("nodemailer");
 const randomstring = require("randomstring");
 const app = express();
 
-app.listen("9002", (req, resp) => {
-  console.log("Server is runing on port 9002...");
+app.listen("9003", (req, resp) => {
+  console.log("Server is runing on port 9003...");
 });
 
 app.get(`${API_URL.user}/all`, (httpReq, httpResp) => {
@@ -116,7 +116,7 @@ app.get("/api/auth/register", (req, resp) => {
 
           //create api url
 
-          let endpoint = `http://localhost:9002/api/verify-email/${newUser.email}/code/${newUser.token}`;
+          let endpoint = `http://localhost:9003/api/verify-email/${newUser.email}/code/${newUser.token}`;
 
           // send the email
           let transporter = nodemailer.createTransport({
@@ -219,7 +219,7 @@ app.get("/api/resend-email/:email/code/:token", (req, resp) => {
           );
 
           //create Api
-          let endpoint = `http://localhost:9002/api/resend-email/${email}/code/${Token}`;
+          let endpoint = `http://localhost:9003/api/resend-email/${email}/code/${Token}`;
           //send email
           let transporter = nodemailer.createTransport({
             host: "smtp.mailgun.org",
@@ -289,7 +289,7 @@ app.get("/api/forget-password/:email", (req, resp) => {
 
                 //create api url
 
-                let endpoint = `http://localhost:9002/api/reset-pass/${email}/code/${token}`;
+                let endpoint = `http://localhost:9003/api/reset-pass/${email}/code/${token}`;
                 let transporter = nodemailer.createTransport({
                   host: "smtp.mailgun.org",
                   port: 587,
@@ -359,17 +359,24 @@ app.get("/api/reset-pass/:email/code/:token", (req, resp) => {
 app.get("/api/login/:email/code/:pass", (req, resp) => {
   let email = req.params.email;
   let pass = req.params.pass;
-  DB.query(
-    `SELECT PASSWORD from Email WHERE Email='${email}' AND PASSWORD='${pass}'`,
-    (err, resQ) => {
-      if (err) throw err;
-      else {
-        if (resQ.length === 0) {
-          resp.send("invalid email or pass");
-        } else {
-          resp.send("SIGNED IN");
+  let hash = req.params.pass;
+  bcrypt
+    .compare(pass, hash)
+    .then((res) => {
+      DB.query(
+        `SELECT PASSWORD from Email WHERE Email='${email}' AND PASSWORD='${pass}'`,
+        (err, resQ) => {
+          if (err) throw err;
+          else {
+            if (resQ.length === 0) {
+              resp.send("invalid email or pass");
+            } else {
+              resp.send("SIGNED IN");
+            }
+          }
         }
-      }
-    }
-  );
+      );
+      console.log(res);
+    })
+    .catch((err) => console.error(err.message));
 });
